@@ -35,8 +35,7 @@ int main () {
 							    	0, 1, 0, 0, 1, 0, -1, 0, 1, 0,
 							    	0, -1, 0, 0, 1, 0, -1, 0, 1, 0,
 							    	0, -1, 1, 1, 1, -1, -1, 0, 2, 0,
-							    	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-								};	
+	system("color 20");				    	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,						};	
 	printTable (table);
 	
 	while (1) {
@@ -48,7 +47,7 @@ int main () {
 		
 		choose = getChoose (pacman, table);
 		
-		sleep (1);
+		Sleep (200);
 		
 		gotoxy (pacman.x, pacman.y);
 			printf (" ");
@@ -101,7 +100,7 @@ void printTable (short table[COLUMN][ROW]) {
 		printf ("\n");
 	}
 }
-coord dijkstra (coord pacman, short table[COLUMN][ROW], short way[COLUMN][ROW]) {
+coord navigator (coord pacman, short table[COLUMN][ROW], short way[COLUMN][ROW]) {
 	int dist [COLUMN][ROW];
 	for (int i = 0; i < COLUMN; i++)
 		for (int j = 0; j < ROW; j++) {
@@ -202,7 +201,7 @@ int getChoose (coord pacman, short table [COLUMN][ROW]) {
 	static short way [COLUMN][ROW] = { 0 };
 	
 	if ((goal.x == pacman.x && goal.y == pacman.y) || goal.x == -1)
-		goal = dijkstra (pacman, table, way);
+		goal = navigator (pacman, table, way);
 				
 	way [pacman.y][pacman.x] = 0;
 	return 4*(way[pacman.y][pacman.x+1]) + 3*(way[pacman.y][pacman.x-1]) + 2*(way[pacman.y+1][pacman.x]) + way[pacman.y-1][pacman.x];
