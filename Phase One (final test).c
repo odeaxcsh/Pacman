@@ -6,7 +6,8 @@
 #define FRUIT_COLOR 12 // Red
 #define BLOCK_COLOR 10 // Green
 #define PACMAN_COLOR 14 // Yellow
-#define MOVE_SLEEP_TIME 150
+#define CHOOSE_SLEEP_TIME 300
+#define MOVE_SLEEP_TIME 50
 #define PRINT_SLEEP_TIME 25
 #define MAX 101
 #define MROW 100
@@ -25,7 +26,7 @@ typedef struct{
 } coord;
 
 char flimentPrint (short [MCOLUMN][MROW], int, int, int);
-void printWay (short [MCOLUMN][MROW], short [MCOLUMN][MROW]);
+void printWay (short [MCOLUMN][MROW], short [MCOLUMN][MROW], coord);
 void EndOfGame ();
 void hideCursor();
 void scanTable (coord*, short [MCOLUMN][MROW], char const*);
@@ -55,20 +56,20 @@ int main () {
 
     Sleep (1000);
 	while (1) {
-		int choose;
+		int choice;
 		SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
 		gotoxy (pacman.x, pacman.y);
         printf ("%c", 'C');
 
-		choose = getChoose (pacman, table, way);
+		choice = getChoose (pacman, table, way);
 
 		Sleep (MOVE_SLEEP_TIME);
 
 		gotoxy (pacman.x, pacman.y);
 			printf (" ");
 
-		if (choose)
-			move (&pacman, table, choose);
+		if (choice)
+			move (&pacman, table, choice);
 
 		else  break;
 	}
@@ -76,16 +77,41 @@ int main () {
 	Sleep (1000);
 	EndOfGame ();
 }
-void printWay (short way[MCOLUMN][MROW], short table[MCOLUMN][MROW]) {
+void printWay (short way[MCOLUMN][MROW], short table[MCOLUMN][MROW], coord pacman) {
+	int Way [MCOLUMN][MROW] = { 0 };
+	for (int i = 0; i < COLUMN; i++)
+		for (int j = 0;j < ROW; j++)
+			Way [i][j] = way [i][j];
+			
 	SetConsoleTextAttribute(hConsole, 15);
-	for (int i = 0; i < COLUMN; i++){
-		for (int j = 0; j < ROW; j++) {
-			char block = ' ';
-			if (way [i][j]) block = flimentPrint(way, i, j, 1);
-			gotoxy (j, i);
-			if (block != ' ' && table[i][j] != 1) printf ("%c", block);
-		}
-		printf ("\n");
+	
+	while (table [pacman.y][pacman.x] != 1) {
+		Way [pacman.y][pacman.x] = 0;
+		
+		if (Way[pacman.y][pacman.x-1] && pacman.x > 0)
+			pacman.x--;
+
+		else if (Way[pacman.y-1][pacman.x] && pacman.y > 0)
+			pacman.y--;
+			
+		else if (Way[pacman.y+1][pacman.x] && pacman.y+1 < COLUMN)
+			pacman.y++;
+			
+		
+		else if (Way[pacman.y][pacman.x+1] && pacman.x+1 < ROW)
+			pacman.x++;
+			
+		else break;
+			
+		char block = ' ';
+		
+		block = flimentPrint(way, pacman.y, pacman.x, 1);
+			 
+		gotoxy (pacman.x, pacman.y);
+		if (table[pacman.y][pacman.x] != 1)
+			printf ("%c", block);
+		
+		Sleep (PRINT_SLEEP_TIME);
 	}
 }
 void printTable (short table[MCOLUMN][MROW]) {
@@ -174,10 +200,10 @@ coord navigator (coord pacman, short table[MCOLUMN][MROW], short way[MCOLUMN][MR
 
 	return goal;
 }
-void move (coord* pacman, short table [MCOLUMN][MROW], int choose) {
+void move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 	table[pacman->y][pacman->x] = -1;
 
-	switch (choose) {
+	switch (choice) {
 		case 1:
 			if (pacman->y > 0 && table[pacman->y-1][pacman->x])
 				pacman->y--;
@@ -212,12 +238,14 @@ void gotoxy(int x,int y){
   cursorLoc.Y = y;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
   SetConsoleCursorPosition(hConsole, cursorLoc);
-}int getChoose (coord pacman, short table [MCOLUMN][MROW], short way[MCOLUMN][MROW]) {
+}
+int getChoose (coord pacman, short table [MCOLUMN][MROW], short way[MCOLUMN][MROW]) {
 	static coord goal = {-1 , -1};
 
 	if ((goal.x == pacman.x && goal.y == pacman.y) || goal.x == -1) {
+		Sleep (CHOOSE_SLEEP_TIME);
 		goal = navigator (pacman, table, way);
-		printWay (way, table);
+		printWay (way, table, pacman);
 	}
 
 	way [pacman.y][pacman.x] = 0;
