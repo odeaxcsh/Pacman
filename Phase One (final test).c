@@ -14,17 +14,23 @@
 #define MCOLUMN 100
 #define INF (int)8e5 + 1
 
+
 HANDLE hConsole;
 int COLUMN;
 int ROW;
+int X = 50;
+int Y = 0;
+
 //1 -> fruit
 //0 -> block
 //-1 -> empty
+
 typedef struct{
 	short x;
 	short y;
 } coord;
 
+void ShowIformatin ();
 char flimentPrint (short [MCOLUMN][MROW], int, int, int);
 void printWay (short [MCOLUMN][MROW], short [MCOLUMN][MROW], coord);
 void EndOfGame ();
@@ -45,27 +51,30 @@ int main () {
 	short table [MCOLUMN][MROW] = { 0 };
 	short way [MCOLUMN][MROW] = { 0 };
 
+	ShowInformation ();
+	
 	printf ("ENTER SOURCE FILE ADDRESS : ");
 	gets (fileAddress);
 
 	system ("cls");
     hideCursor();
-
+	
 	scanTable (&pacman, table, fileAddress);
+//	printFrame ();
 	printTable (table);
 
     Sleep (1000);
 	while (1) {
 		int choice;
 		SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
-		gotoxy (pacman.x, pacman.y);
+		gotoxy (pacman.x + X, pacman.y + Y);
         printf ("%c", 'C');
 
 		choice = getChoose (pacman, table, way);
 
 		Sleep (MOVE_SLEEP_TIME);
 
-		gotoxy (pacman.x, pacman.y);
+		gotoxy (pacman.x + X, pacman.y + Y);
 			printf (" ");
 
 		if (choice)
@@ -76,6 +85,45 @@ int main () {
 
 	Sleep (1000);
 	EndOfGame ();
+}
+void ShowInformation () {
+	printf ("%s", "Thta's information");
+}
+void printFrame () {
+	gotoxy (X, Y);
+	for (int i = 1; i <= COLUMN; i++) {
+		
+		gotoxy (X + ROW + 1, Y + i);
+		printf ("%c", 186);
+		
+		gotoxy (X, Y + i);
+		printf ("%c", 186);
+		
+		Sleep (PRINT_SLEEP_TIME);
+	}
+	
+	gotoxy (X, COLUMN + Y + 1);
+	printf ("%c", 200);
+	gotoxy (X, Y);
+	printf ("%c", 201);
+	
+	for (int i = 0; i < ROW; i++) {
+		gotoxy (X + i + 1, Y);
+		printf ("%c", 205);
+		
+		gotoxy (X + i + 1, Y + COLUMN + 1);
+		printf ("%c", 205);
+		
+		Sleep (PRINT_SLEEP_TIME);
+	}
+	
+	printf ("%c", 188);
+	gotoxy (X + ROW + 1, Y);
+	printf ("%c", 187);
+	
+	
+	X++;
+	Y++;
 }
 void printWay (short way[MCOLUMN][MROW], short table[MCOLUMN][MROW], coord pacman) {
 	int Way [MCOLUMN][MROW] = { 0 };
@@ -107,7 +155,7 @@ void printWay (short way[MCOLUMN][MROW], short table[MCOLUMN][MROW], coord pacma
 		
 		block = flimentPrint(way, pacman.y, pacman.x, 1);
 			 
-		gotoxy (pacman.x, pacman.y);
+		gotoxy (pacman.x + X, pacman.y + Y);
 		if (table[pacman.y][pacman.x] != 1)
 			printf ("%c", block);
 		
@@ -121,7 +169,7 @@ void printTable (short table[MCOLUMN][MROW]) {
 			int reap = 2;
 
             SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
-            gotoxy (j, i);
+            gotoxy (j + X, i + Y);
             printf ("%c", 219);
             Sleep (PRINT_SLEEP_TIME);
 
@@ -138,7 +186,7 @@ void printTable (short table[MCOLUMN][MROW]) {
                 SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
             }
 
-            gotoxy (j, i);
+            gotoxy (j + X, i + Y);
             printf ("%c", block);
         }
 }
@@ -296,25 +344,25 @@ void EndOfGame () {
 	for (int i = 0; i < COLUMN; i++)
 		for (int j = i; j < ROW; j++){
 			if (j < ROW && i < COLUMN) {
-				gotoxy (j, i);
+				gotoxy (j + X, i + Y);
 				printf ("%c", 219);
 			}
 			if (j < COLUMN && i < ROW) {
-				gotoxy (i, j);
+				gotoxy (i + X, j + Y);
 				printf ("%c", 219);
 			}
 
 			Sleep (PRINT_SLEEP_TIME);
-			gotoxy (j, i);
+			gotoxy (j + X, i + Y);
 			printf (" ");
-			gotoxy (i, j);
+			gotoxy (i + X, j + Y);
 			printf (" ");
 		}
 
 	SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
-	gotoxy (50, 0);
+	gotoxy (X, 0);
 	printf ("THE END");
-	gotoxy (50, 1);
+	gotoxy (X, 1);
 	printf ("\\[%c-%c]/", 167, 167);
 }
 char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p) {
