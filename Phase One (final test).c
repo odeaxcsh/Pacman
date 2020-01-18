@@ -30,6 +30,7 @@ typedef struct{
 	short y;
 } coord;
 
+void Frame(int, int);
 void ShowIformatin ();
 char flimentPrint (short [MCOLUMN][MROW], int, int, int);
 void printWay (short [MCOLUMN][MROW], short [MCOLUMN][MROW], coord);
@@ -51,16 +52,18 @@ int main () {
 	short table [MCOLUMN][MROW] = { 0 };
 	short way [MCOLUMN][MROW] = { 0 };
 
-	ShowInformation ();
-	
+//	ShowInformation ();
+
 	printf ("ENTER SOURCE FILE ADDRESS : ");
 	gets (fileAddress);
 
 	system ("cls");
     hideCursor();
-	
+
 	scanTable (&pacman, table, fileAddress);
-//	printFrame ();
+	for (int i = 0; i < 3; i++)
+        Frame(1, 1);
+
 	printTable (table);
 
     Sleep (1000);
@@ -78,87 +81,98 @@ int main () {
 			printf (" ");
 
 		if (choice)
-			move (&pacman, table, choice);
+			move(&pacman, table, choice);
 
 		else  break;
 	}
 
 	Sleep (1000);
+	
+	for (int i = 0; i < 4; i++)
+        Frame(0, 0);
+        
 	EndOfGame ();
 }
 void ShowInformation () {
 	printf ("%s", "Thta's information");
 }
-void printFrame () {
+
+void Frame (int m, int mode) {
 	gotoxy (X, Y);
 	for (int i = 1; i <= COLUMN; i++) {
-		
+
 		gotoxy (X + ROW + 1, Y + i);
-		printf ("%c", 186);
-		
+		printf ("%c", m ? 186 : ' ');
+
 		gotoxy (X, Y + i);
-		printf ("%c", 186);
-		
+		printf ("%c", m ? 186 : ' ');
+
 		Sleep (PRINT_SLEEP_TIME);
 	}
-	
+
 	gotoxy (X, COLUMN + Y + 1);
-	printf ("%c", 200);
+	printf ("%c", m ? 200 : ' ');
 	gotoxy (X, Y);
-	printf ("%c", 201);
-	
+	printf ("%c", m ? 201 : ' ');
+
 	for (int i = 0; i < ROW; i++) {
 		gotoxy (X + i + 1, Y);
-		printf ("%c", 205);
-		
+		printf ("%c", m ? 205 : ' ');
+
 		gotoxy (X + i + 1, Y + COLUMN + 1);
-		printf ("%c", 205);
-		
+		printf ("%c", m ? 205 : ' ');
+
 		Sleep (PRINT_SLEEP_TIME);
 	}
-	
-	printf ("%c", 188);
+
+	printf ("%c", m ? 188 : ' ');
 	gotoxy (X + ROW + 1, Y);
-	printf ("%c", 187);
-	
-	
-	X++;
-	Y++;
+	printf ("%c", m ? 187 : ' ');
+
+	if (mode) {
+        X++;
+        Y++;
+	}
+
+	else {
+        X--;
+        Y--;
+	}
 }
 void printWay (short way[MCOLUMN][MROW], short table[MCOLUMN][MROW], coord pacman) {
 	int Way [MCOLUMN][MROW] = { 0 };
 	for (int i = 0; i < COLUMN; i++)
 		for (int j = 0;j < ROW; j++)
 			Way [i][j] = way [i][j];
-			
+
 	SetConsoleTextAttribute(hConsole, 15);
-	
+
 	while (table [pacman.y][pacman.x] != 1) {
 		Way [pacman.y][pacman.x] = 0;
-		
+
 		if (Way[pacman.y][pacman.x-1] && pacman.x > 0)
 			pacman.x--;
 
 		else if (Way[pacman.y-1][pacman.x] && pacman.y > 0)
 			pacman.y--;
-			
+
 		else if (Way[pacman.y+1][pacman.x] && pacman.y+1 < COLUMN)
 			pacman.y++;
-			
-		
+
+
 		else if (Way[pacman.y][pacman.x+1] && pacman.x+1 < ROW)
 			pacman.x++;
-			
+
 		else break;
-			
+
 		char block = ' ';
-		
+
 		block = flimentPrint(way, pacman.y, pacman.x, 1);
-			 
+
 		gotoxy (pacman.x + X, pacman.y + Y);
 		if (table[pacman.y][pacman.x] != 1)
 			printf ("%c", block);
-		
+
 		Sleep (PRINT_SLEEP_TIME);
 	}
 }
@@ -371,7 +385,7 @@ char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p) {
 				switch (value) {
 					case 0 : block = 254; break;
 
-					case 1 :
+					case 1:
 					case 2:
 					case 3: block = 186; break;
 
