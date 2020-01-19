@@ -8,14 +8,15 @@
 #define FRUIT_COLOR 12 // Red
 #define BLOCK_COLOR 10 // Green
 #define PACMAN_COLOR 14 // Yellow
-#define GHOST_COLOR 9
+#define GHOST_COLOR 13
+#define WEAK_GHOST_COLOR 9
 
 #define GHOST_SCORE 50
 #define FRUIT_SCORE 20
 #define BOOST_TIME 10
 #define CHOOSE_SLEEP_TIME 300
 #define MOVE_SLEEP_TIME 200
-#define PRINT_SLEEP_TIME 25
+#define PRINT_SLEEP_TIME 20
 #define MAX 101
 #define MROW 100
 #define MCOLUMN 100
@@ -104,7 +105,7 @@ int main () {
 
         else  break;
 
-        eventManager (event);
+        eventManager(event);
 	}
 
 	Sleep (1000);
@@ -180,11 +181,15 @@ int move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 			if (pacman->y > 0 && table[pacman->y-1][pacman->x])
 				pacman->y--;
 
+            else return 0;
+
 			break;
 
 		case 2:
 			if (pacman->y + 1 < COLUMN && table[pacman->y+1][pacman->x])
 				pacman->y++;
+
+            else return 0;
 
 			break;
 
@@ -192,11 +197,15 @@ int move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 			if (pacman->x > 0 && table[pacman->y][pacman->x-1])
 				pacman->x--;
 
+            else return 0;
+
 			break;
 
 		case 4:
 			if (pacman->x + 1 < ROW && table[pacman->y][pacman->x+1])
 				pacman->x++;
+
+            else return 0;
 	}
     int tmp = table[pacman->y][pacman->x];
 
@@ -309,12 +318,18 @@ void moveGhosts (short table [MCOLUMN][MROW]) {
     for (int i = 0; i < COLUMN; i++)
         for (int j = 0; j < ROW; j++)
             if (table[i][j] == 2){
+                int dir = 0;
                 coord ghost = {j, i};
                 gotoxy (X + j, Y + i);
                 printf (" ");
-                move (&ghost, table, rand()%4 + 1);
 
-                SetConsoleTextAttribute (hConsole, GHOST_COLOR);
+                do {
+                    dir = move (&ghost, table, rand()%4 + 1);
+                }while (dir);
+
+                if (boost) SetConsoleTextAttribute (hConsole, WEAK_GHOST_COLOR);
+                else SetConsoleTextAttribute(hConsole, GHOST_COLOR);
+
                 gotoxy (ghost.x + X, ghost.y + Y);
                 printf ("G");
                 table [ghost.y][ghost.x] = -2;
