@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <windows.h>
 #include <conio.h>
 
@@ -7,6 +8,11 @@
 #define FRUIT_COLOR 12 // Red
 #define BLOCK_COLOR 10 // Green
 #define PACMAN_COLOR 14 // Yellow
+#define GHOST_COLOR 9
+
+#define GHOST_SCORE 50
+#define FRUIT_SCORE 20
+#define BOOST_TIME 10
 #define CHOOSE_SLEEP_TIME 300
 #define MOVE_SLEEP_TIME 200
 #define PRINT_SLEEP_TIME 25
@@ -17,38 +23,48 @@
 
 
 HANDLE hConsole;
+int score = 0;
+int boost = 0;
 int COLUMN;
 int ROW;
 int X = 50;
 int Y = 0;
 
-//1 -> fruit
-//0 -> block
-//-1 -> empty
+//1 -> Fruit
+//0 -> Block
+//-1 -> Empty
+//3 -> Pacman
+//2 -> Ghost
+//-2 -> Moved Ghost
+
 
 typedef struct{
 	short x;
 	short y;
 } coord;
 
+void eventManager (int);
 int getChoose ();
 char flimentPrint (short [MCOLUMN][MROW], int, int, int);
 void EndOfGame ();
 void hideCursor();
+void moveGhosts (short [MCOLUMN][MROW]);
 void scanTable (coord*, short [MCOLUMN][MROW], char const*);
-void move (coord*, short [MCOLUMN][MROW], int);
+int move (coord*, short [MCOLUMN][MROW], int);
 void printTable (short [MCOLUMN][MROW]);
 void gotoxy (int, int);
 
 int main () {
 
-    int time = 0;
-    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
+    int event = 0;
 	coord pacman;
 	char fileAddress [MAX];
 	short table [MCOLUMN][MROW] = { 0 };
 	short way [MCOLUMN][MROW] = { 0 };
+
+
+    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    srand(time(NULL));
 
 	printf ("ENTER SOURCE FILE ADDRESS : ");
 	gets (fileAddress);
@@ -59,35 +75,58 @@ int main () {
 	scanTable (&pacman, table, fileAddress);
 
 	printTable (table);
-    int choice = 1;
+    int choice = -1;
     fflush(stdin);
     Sleep (1000);
+
 	while (1) {
-
+        if (boost)
+            boost--;
 		SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
-		gotoxy (pacman.x + X, pacman.y + Y);
-        printf ("%c", 'C');
+		gotoxy(pacman.x + X, pacman.y + Y);
+        printf("%c", 'C');
 
-        if (kbhit ())
+        if(kbhit ())
             choice = getChoose ();
 
-        gotoxy (0, 0);
-        printf ("%d", ++time);
-            Sleep(MOVE_SLEEP_TIME);
+        gotoxy(0, 0);
+        printf("%3d - %3d", score, boost);
+        Sleep(MOVE_SLEEP_TIME);
 
-            gotoxy(pacman.x + X, pacman.y + Y);
-			printf(" ");
+        gotoxy(pacman.x + X, pacman.y + Y);
+        printf(" ");
 
-            if (choice)
-                move(&pacman, table, choice);
+        moveGhosts(table);
+        if (table[pacman.x][pacman.y] == 2) break;
 
-            else  break;
+        if(choice)
+            event = move(&pacman, table, choice);
 
+        else  break;
+
+        eventManager (event);
 	}
 
 	Sleep (1000);
 
 	EndOfGame ();
+}
+void eventManager (int num) {
+    switch (num) {
+        case 1:
+            score += FRUIT_SCORE;
+            boost += BOOST_TIME;
+            break;
+
+        case 2:
+            if (boost)
+                score += GHOST_SCORE;
+
+            else {
+                EndOfGame();
+                exit(0);
+            }
+    }
 }
 int getChoose () {
 	char choose = getch();
@@ -98,7 +137,7 @@ int getChoose () {
 		case 'A'/*75*/: return 3;
 		case 'D'/*77*/: return 4;
 
-		default: return 0;
+		case '0': return 0;
 	}
 }
 void printTable (short table[MCOLUMN][MROW]) {
@@ -121,6 +160,10 @@ void printTable (short table[MCOLUMN][MROW]) {
                 SetConsoleTextAttribute(hConsole, FRUIT_COLOR);
             }
             else if (table [i][j] == 2) {
+                block = 'G';
+                SetConsoleTextAttribute(hConsole, GHOST_COLOR);
+            }
+            else if (table [i][j] == 3){
                 block = 'C';
                 SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
             }
@@ -129,7 +172,7 @@ void printTable (short table[MCOLUMN][MROW]) {
             printf ("%c", block);
         }
 }
-void move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
+int move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 	table[pacman->y][pacman->x] = -1;
 
 	switch (choice) {
@@ -155,10 +198,10 @@ void move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 			if (pacman->x + 1 < ROW && table[pacman->y][pacman->x+1])
 				pacman->x++;
 	}
+    int tmp = table[pacman->y][pacman->x];
 
-	table[pacman->y][pacman->x] = 2;
-
-
+	table[pacman->y][pacman->x] = 3;
+	return tmp;
 }
 void gotoxy(int x,int y){
   HANDLE hConsole;
@@ -183,11 +226,12 @@ void scanTable (coord* pacman, short table[MCOLUMN][MROW], char const* fileAddre
 	while (!feof (source)){
 		char bfr = getc (source);
 
+		if (bfr == 'G') table [i][j++] = 2;
 		if (bfr == '*') table [i][j++] = 1;
 		if (bfr == '#') table [i][j++] = 0;
 		if (bfr == '1') table [i][j++] = -1;
 		if (bfr == '0') {
-			table [i][j++] = 2;
+			table [i][j++] = 3;
 			pacman->x = j-1;
 			pacman->y = i;
 		}
@@ -260,4 +304,24 @@ char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p) {
 					case 15: block = 206; break;
             }
     return block;
+}
+void moveGhosts (short table [MCOLUMN][MROW]) {
+    for (int i = 0; i < COLUMN; i++)
+        for (int j = 0; j < ROW; j++)
+            if (table[i][j] == 2){
+                coord ghost = {j, i};
+                gotoxy (X + j, Y + i);
+                printf (" ");
+                move (&ghost, table, rand()%4 + 1);
+
+                SetConsoleTextAttribute (hConsole, GHOST_COLOR);
+                gotoxy (ghost.x + X, ghost.y + Y);
+                printf ("G");
+                table [ghost.y][ghost.x] = -2;
+        }
+
+    for (int i = 0; i < COLUMN; i++)
+        for (int j = 0; j < ROW; j++)
+            if (table[i][j] == -2)
+                table[i][j] = 2;
 }
