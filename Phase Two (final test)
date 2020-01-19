@@ -130,15 +130,18 @@ void eventManager (int num) {
     }
 }
 int getChoose () {
-	char choose = getch();
+	int flag = 0;
+	char choice = getch();
+	if (choice == '-') flag = 1;
+	choice = getch();
+	if (choice == '1' && flag)
+		return 0;
 
-	switch(choose) {
-		case 'W'/*72*/: return 1;
-		case 'S'/*80*/: return 2;
-		case 'A'/*75*/: return 3;
-		case 'D'/*77*/: return 4;
-
-		case '0': return 0;
+	switch(choice) {
+		case 72: return 1;
+		case 80: return 2;
+		case 75: return 3;
+		case 77: return 4;
 	}
 }
 void printTable (short table[MCOLUMN][MROW]) {
@@ -181,15 +184,11 @@ int move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 			if (pacman->y > 0 && table[pacman->y-1][pacman->x])
 				pacman->y--;
 
-            else return 0;
-
 			break;
 
 		case 2:
 			if (pacman->y + 1 < COLUMN && table[pacman->y+1][pacman->x])
 				pacman->y++;
-
-            else return 0;
 
 			break;
 
@@ -197,15 +196,11 @@ int move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 			if (pacman->x > 0 && table[pacman->y][pacman->x-1])
 				pacman->x--;
 
-            else return 0;
-
 			break;
 
 		case 4:
 			if (pacman->x + 1 < ROW && table[pacman->y][pacman->x+1])
 				pacman->x++;
-
-            else return 0;
 	}
     int tmp = table[pacman->y][pacman->x];
 
@@ -318,14 +313,12 @@ void moveGhosts (short table [MCOLUMN][MROW]) {
     for (int i = 0; i < COLUMN; i++)
         for (int j = 0; j < ROW; j++)
             if (table[i][j] == 2){
-                int dir = 0;
+
                 coord ghost = {j, i};
                 gotoxy (X + j, Y + i);
                 printf (" ");
 
-                do {
-                    dir = move (&ghost, table, rand()%4 + 1);
-                }while (dir);
+                move (&ghost, table, rand()%4 + 1);
 
                 if (boost) SetConsoleTextAttribute (hConsole, WEAK_GHOST_COLOR);
                 else SetConsoleTextAttribute(hConsole, GHOST_COLOR);
