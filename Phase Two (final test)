@@ -93,13 +93,13 @@ int main () {
         messageBox("START");
         Sleep(1000);
 	}
-	else printf("Map is too small to show message boxes \n");
+else printf("Map is too small to show message boxes \n");
     printTable(table, 0, 0);
 
     int choice = userInput();
 
 	while (1) {
-		gotoxy(0, 0);printf("%d --- %d", score, ChangeThisNameLater);
+		gotoxy(0, 0);printf("Score : %6d --- ChangeThisNameLater : %4d", score, ChangeThisNameLater);
 
 		SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
 		gotoxy (pacman.x + X, pacman.y + Y);
