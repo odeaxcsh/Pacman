@@ -1,150 +1,271 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <windows.h>
 #include <conio.h>
+#include <stdlib.h>
+#include <windows.h>
 
 #define CORSUR_COLOR 15 // White
 #define FRUIT_COLOR 12 // Red
 #define BLOCK_COLOR 10 // Green
 #define PACMAN_COLOR 14 // Yellow
-#define GHOST_COLOR 13
-#define WEAK_GHOST_COLOR 9
+#define MASAAGE_BOX_COLOR 14 //yellow
+#define WEEK_GHOST_COLOR 9
+#define GHOST_COLOR 5
 
-#define GHOST_SCORE 50
-#define FRUIT_SCORE 20
-#define BOOST_TIME 10
+#define GHOST_SCORE 200
+#define FRUIT_SCORE 150
+
+#define ChangeThisNameLater_TIME 30
 #define CHOOSE_SLEEP_TIME 300
 #define MOVE_SLEEP_TIME 200
 #define PRINT_SLEEP_TIME 20
 #define MAX 101
 #define MROW 100
 #define MCOLUMN 100
-#define INF (int)8e5 + 1
-
+#define INF (int)99
 
 HANDLE hConsole;
-int score = 0;
-int boost = 0;
 int COLUMN;
 int ROW;
-int X = 50;
+int X = 30;
 int Y = 0;
+int score = 0;
+int ChangeThisNameLater = 0;
 
-//1 -> Fruit
-//0 -> Block
-//-1 -> Empty
-//3 -> Pacman
-//2 -> Ghost
-//-2 -> Moved Ghost
-
+//1 -> fruit
+//0 -> block
+//-1 -> empty
+//2 -> ghost
+//3 -> pacman
 
 typedef struct{
 	short x;
 	short y;
 } coord;
 
-void eventManager (int);
-int getChoose ();
-char flimentPrint (short [MCOLUMN][MROW], int, int, int);
-void EndOfGame ();
+struct Node{
+    short table[MCOLUMN][MROW];
+    coord ghostCoord;
+    struct Node* next;
+};
+
+typedef struct Node node;
+
+int userInput();
+void eraser();
 void hideCursor();
-void moveGhosts (short [MCOLUMN][MROW]);
-void scanTable (coord*, short [MCOLUMN][MROW], char const*);
-int move (coord*, short [MCOLUMN][MROW], int);
-void printTable (short [MCOLUMN][MROW]);
-void gotoxy (int, int);
+void messageBox();
+void Frame(int, int);
+void gotoxy(int, int);
+int move(coord*, short [MCOLUMN][MROW], int);
+void printTable (short [MCOLUMN][MROW], int, int);
+void moveGhost(coord, short [MCOLUMN][MROW], int);
+int eventmanager(coord, short[MCOLUMN][MROW], int);
+char flimentPrint(short [MCOLUMN][MROW], int, int, int);
+int scanTable(coord*, short [MCOLUMN][MROW], char const*);
 
 int main () {
+	int err;
+	int event = 0;
+	int changeThisNameToo = 0;
+    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    int event = 0;
 	coord pacman;
 	char fileAddress [MAX];
 	short table [MCOLUMN][MROW] = { 0 };
 	short way [MCOLUMN][MROW] = { 0 };
 
+	do {
+		printf ("ENTER SOURCE FILE ADDRESS : ");
+		gets (fileAddress);
 
-    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    srand(time(NULL));
+		system ("cls");
 
-	printf ("ENTER SOURCE FILE ADDRESS : ");
-	gets (fileAddress);
+		err = scanTable (&pacman, table, fileAddress);
+	}while(!err);
 
-	system ("cls");
-    hideCursor();
+	hideCursor();
+	if (ROW > 6 && COLUMN > 6){
+        Frame(1, 1);
+        printTable (table, PRINT_SLEEP_TIME, 1);
+        Sleep (1000);
+        printTable(table, 0, 0);
+        Sleep(1000);
+        messageBox("START");
+        Sleep(1000);
+	}
+	else printf("Map is too small to show message boxes \n");
+    printTable(table, 0, 0);
 
-	scanTable (&pacman, table, fileAddress);
-
-	printTable (table);
-    int choice = -1;
-    fflush(stdin);
-    Sleep (1000);
+    int choice = userInput();
 
 	while (1) {
-        if (boost)
-            boost--;
+		gotoxy(0, 0);printf("%d --- %d", score, ChangeThisNameLater);
+
 		SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
-		gotoxy(pacman.x + X, pacman.y + Y);
-        printf("%c", 'C');
+		gotoxy (pacman.x + X, pacman.y + Y);
+        printf ("%c", 'C');
 
-        if(kbhit ())
-            choice = getChoose ();
+        if(ChangeThisNameLater) ChangeThisNameLater--;
 
-        gotoxy(0, 0);
-        printf("%3d - %3d", score, boost);
-        Sleep(MOVE_SLEEP_TIME);
+        if(kbhit())
+            choice = userInput(pacman, table, way);
 
-        gotoxy(pacman.x + X, pacman.y + Y);
-        printf(" ");
+		Sleep (MOVE_SLEEP_TIME);
 
-        moveGhosts(table);
-        if (table[pacman.x][pacman.y] == 2) break;
+		gotoxy (pacman.x + X, pacman.y + Y);
+			printf (" ");
 
-        if(choice)
+		if (choice){
             event = move(&pacman, table, choice);
+            table[pacman.y][pacman.x] = 3;
+		}
 
-        else  break;
-
-        eventManager(event);
+		else  break;
+		if(eventmanager(pacman, table, event))
+            break;
 	}
 
 	Sleep (1000);
-
-	EndOfGame ();
+	eraser ();
+	Frame(0, 0);
+	ROW = 0; COLUMN = 6;
+	messageBox("FINISH \\[^-^]/ THANKS");
 }
-void eventManager (int num) {
-    switch (num) {
+int eventmanager (coord pacman, short table[MCOLUMN][MROW], int event){
+    switch (event){
         case 1:
             score += FRUIT_SCORE;
-            boost += BOOST_TIME;
+            ChangeThisNameLater += ChangeThisNameLater_TIME;
             break;
 
         case 2:
-            if (boost)
+            if (ChangeThisNameLater)
                 score += GHOST_SCORE;
-
-            else {
-                EndOfGame();
-                exit(0);
-            }
+            else return 1;
     }
-}
-int getChoose () {
-	int flag = 0;
-	char choice = getch();
-	if (choice == '-') flag = 1;
-	choice = getch();
-	if (choice == '1' && flag)
-		return 0;
 
-	switch(choice) {
-		case 72: return 1;
-		case 80: return 2;
-		case 75: return 3;
-		case 77: return 4;
+    for (int i = 0; i < COLUMN; i++)
+        for (int j = 0; j < ROW; j++)
+            if (table[i][j] == 2){
+                gotoxy(X+j, Y+i);
+                printf(" ");
+            }
+
+    moveGhost(pacman, table, ChangeThisNameLater == 0);
+
+    SetConsoleTextAttribute(hConsole, ChangeThisNameLater > 0 ? WEEK_GHOST_COLOR : GHOST_COLOR);
+
+    for (int i = 0; i < COLUMN; i++)
+        for (int j = 0; j < ROW; j++)
+            if (table[i][j] == 2){
+                gotoxy(X+j, Y+i);
+                printf("G");
+            }
+
+    if (table[pacman.y][pacman.x] == 2) return 1;
+    return 0;
+}
+void moveGhost(coord pacman, short table[MCOLUMN][MROW], int mode){
+    int dist [MCOLUMN][MROW];
+	for (int i = 0; i < COLUMN; i++)
+		for (int j = 0; j < ROW; j++)
+			dist [i][j] = INF;
+
+    dist [pacman.y][pacman.x] = 0;
+
+	int flag = 1;
+	while (flag){
+		flag = 0;
+		for (int i = 0; i < COLUMN; i++)
+			for (int j = 0; j < ROW; j++){
+				int tmp = dist [i][j];
+				if (table[i][j] == 2 || table[i][j] == -1)
+					dist [i][j] = min (min ((i > 0 ? dist [i-1][j] : INF),(i+1 < COLUMN ? dist[i+1][j] : INF)), min ((j+1 < ROW ? dist[i][j+1] : INF), (j > 0 ? dist[i][j-1] : INF))) + 1;
+
+				if (dist[i][j] != tmp)
+					flag = 1;
+		}
+	}
+
+	for (int i = 0; i < COLUMN; i++)
+        for (int j = 0; j < ROW; j++)
+            if (table[i][j] == 2){
+                coord ghost = {j, i};
+                if (i > 0)
+                    if ((dist[i][j] > dist[i-1][j]) == mode && table[i-1][j] && table [i-1][j] != 2){
+                        move(&ghost, table, 1);
+                        table[ghost.y][ghost.x] = -2;
+                        continue;
+                    }
+                if (i+1 < COLUMN)
+                    if ((dist[i][j] > dist[i+1][j]) == mode && table[i+1][j] && table [i+1][j] != 2){
+                        move(&ghost, table, 2);
+                        table[ghost.y][ghost.x] = -2;
+                        continue;
+                    }
+                if (j > 0)
+                    if ((dist[i][j] > dist[i][j-1]) == mode && table[i][j-1] && table [i][j-1] != 2){
+                        move(&ghost, table, 3);
+                        table[ghost.y][ghost.x] = -2;
+                        continue;
+                    }
+
+                if (j+1 < ROW)
+                    if ((dist[i][j] > dist[i][j+1]) == mode && table[i][j+1] && table [i][j+1] != 2){
+                        move(&ghost, table, 4);
+                        table[ghost.y][ghost.x] = -2;
+                        continue;
+                    }
+            }
+
+    for (int i = 0; i < COLUMN; i++)
+        for (int j = 0; j < ROW; j++)
+            if (table[i][j] == -2)
+                table[i][j] = 2;
+}
+void Frame(int m, int mode) {
+	gotoxy (X, Y);
+	for (int i = 1; i <= COLUMN; i++) {
+
+		gotoxy (X + ROW + 1, Y + i);
+		printf ("%c", m ? 186 : ' ');
+
+		gotoxy (X, Y + i);
+		printf ("%c", m ? 186 : ' ');
+
+		Sleep (PRINT_SLEEP_TIME);
+	}
+
+	gotoxy (X, COLUMN + Y + 1);
+	printf ("%c", m ? 200 : ' ');
+	gotoxy (X, Y);
+	printf ("%c", m ? 201 : ' ');
+
+	for (int i = 0; i < ROW; i++) {
+		gotoxy (X + i + 1, Y);
+		printf ("%c", m ? 205 : ' ');
+
+		gotoxy (X + i + 1, Y + COLUMN + 1);
+		printf ("%c", m ? 205 : ' ');
+
+		Sleep (PRINT_SLEEP_TIME);
+	}
+
+	printf ("%c", m ? 188 : ' ');
+	gotoxy (X + ROW + 1, Y);
+	printf ("%c", m ? 187 : ' ');
+
+	if (mode) {
+        X++;
+        Y++;
+	}
+
+	else {
+        X--;
+        Y--;
 	}
 }
-void printTable (short table[MCOLUMN][MROW]) {
+void printTable(short table[MCOLUMN][MROW], int sleep, int mode) {
 	for (int i = 0; i < COLUMN; i++)
 		for (int j = 0; j < ROW; j++) {
 			char block = ' ';
@@ -153,28 +274,47 @@ void printTable (short table[MCOLUMN][MROW]) {
             SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
             gotoxy (j + X, i + Y);
             printf ("%c", 219);
-            Sleep (PRINT_SLEEP_TIME);
+            Sleep (sleep);
 
             if (!table [i][j]) {
                 block = flimentPrint(table, i, j, 0);
                 SetConsoleTextAttribute(hConsole, BLOCK_COLOR);
             }
             else if (table [i][j] == 1){
-                block = 254;
+                block = '.'/*254*/;
                 SetConsoleTextAttribute(hConsole, FRUIT_COLOR);
             }
             else if (table [i][j] == 2) {
                 block = 'G';
-                SetConsoleTextAttribute(hConsole, GHOST_COLOR);
+                SetConsoleTextAttribute(hConsole, 9);
             }
-            else if (table [i][j] == 3){
+            else if (table [i][j] == 3) {
                 block = 'C';
                 SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
             }
-
             gotoxy (j + X, i + Y);
             printf ("%c", block);
+                if(mode)
+                    messageBox("PRINTING");
         }
+}
+int userInput(){
+    int choice, flag = 0;
+    choice = getch();
+    if(choice == '-')flag = 1;
+
+    choice = getch();
+    	switch(choice) {
+		case 72: return 1;
+		case 80: return 2;
+		case 75: return 3;
+		case 77: return 4;
+		case '1':
+            if (flag)
+                return 0;
+
+        default : -1;
+	}
 }
 int move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 	table[pacman->y][pacman->x] = -1;
@@ -204,7 +344,7 @@ int move (coord* pacman, short table [MCOLUMN][MROW], int choice) {
 	}
     int tmp = table[pacman->y][pacman->x];
 
-	table[pacman->y][pacman->x] = 3;
+	table[pacman->y][pacman->x] = 2;
 	return tmp;
 }
 void gotoxy(int x,int y){
@@ -215,26 +355,24 @@ void gotoxy(int x,int y){
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
   SetConsoleCursorPosition(hConsole, cursorLoc);
 }
-void scanTable (coord* pacman, short table[MCOLUMN][MROW], char const* fileAddress){
+int scanTable (coord* pacman, short table[MCOLUMN][MROW], char const* fileAddress){
 	FILE* source = fopen (fileAddress, "r");
+	int i = 0, j = 0;
 
-	int i = 0;
-	int j = 0;
-
-	if (source == NULL) {
+	if (source == NULL){
 		SetConsoleTextAttribute(hConsole, 76);
-		printf ("FIle Not Exist (Oskol) [#_#] \n");
-		SetConsoleTextAttribute(hConsole, 15);
-		exit (1);
+		printf ("File Does NOT exist (Oskol) [#_#] Try again \n");
+		SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
+		return 0;
 	}
+
 	while (!feof (source)){
 		char bfr = getc (source);
-
-		if (bfr == 'G') table [i][j++] = 2;
 		if (bfr == '*') table [i][j++] = 1;
 		if (bfr == '#') table [i][j++] = 0;
 		if (bfr == '1') table [i][j++] = -1;
-		if (bfr == '0') {
+		if (bfr == 'G') table [i][j++] = 2;
+		if (bfr == '0'){
 			table [i][j++] = 3;
 			pacman->x = j-1;
 			pacman->y = i;
@@ -246,45 +384,44 @@ void scanTable (coord* pacman, short table[MCOLUMN][MROW], char const* fileAddre
 		}
 	}
 	COLUMN = i+1;
+	return 1;
 }
-void hideCursor(){
-   HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+void hideCursor(){//Hides cursor :)
    CONSOLE_CURSOR_INFO info;
    info.dwSize = 100;
    info.bVisible = FALSE;
-   SetConsoleCursorInfo(consoleHandle, &info);
+   SetConsoleCursorInfo(hConsole, &info);
 }
-void EndOfGame () {
-	gotoxy (0, 0);
-	SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
+void eraser(){
+	SetConsoleTextAttribute(hConsole, CORSUR_COLOR);//CHANGE COLOR
+
 	for (int i = 0; i < COLUMN; i++)
 		for (int j = i; j < ROW; j++){
-			if (j < ROW && i < COLUMN) {
+			if (j < ROW && i < COLUMN){//Print cursor (HORIZENTAL)
 				gotoxy (j + X, i + Y);
 				printf ("%c", 219);
 			}
-			if (j < COLUMN && i < ROW) {
+			if (j < COLUMN && i < ROW) {//Print cursor (VERTICAL)
 				gotoxy (i + X, j + Y);
 				printf ("%c", 219);
 			}
 
 			Sleep (PRINT_SLEEP_TIME);
-			gotoxy (j + X, i + Y);
-			printf (" ");
-			gotoxy (i + X, j + Y);
-			printf (" ");
-		}
 
-	SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
-	gotoxy (X, 0);
-	printf ("THE END");
-	gotoxy (X, 1);
-	printf ("\\[%c-%c]/", 167, 167);
+			if (j < ROW && i < COLUMN){//Erase map (HORIZENTAL)
+				gotoxy (j + X, i + Y);
+				printf (" ");
+			}
+			if (j < COLUMN && i < ROW) {//Erase map (VERTICAL)
+				gotoxy (i + X, j + Y);
+				printf (" ");
+			}
+		}
 }
-char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p) {
+char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p){
     char block = 0;
     int value = 8 * (j+1 < ROW ? table [i][j+1] == p : 0) + 4 * (j > 0 ? table [i][j-1] == p : 0) + 2 * (i > 0 ? table [i-1][j] == p : 0) + (i+1 < COLUMN ? table [i+1][j] == p : 0);
-				switch (value) {
+				switch (value) {//ADDING COMMENT TO THIS PARTS IS TOO COMPLEX
 					case 0 : block = 254; break;
 
 					case 1:
@@ -309,27 +446,20 @@ char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p) {
             }
     return block;
 }
-void moveGhosts (short table [MCOLUMN][MROW]) {
-    for (int i = 0; i < COLUMN; i++)
-        for (int j = 0; j < ROW; j++)
-            if (table[i][j] == 2){
+void messageBox (char* s){
+	int len = strlen (s);
+    SetConsoleTextAttribute(hConsole, MASAAGE_BOX_COLOR);
 
-                coord ghost = {j, i};
-                gotoxy (X + j, Y + i);
-                printf (" ");
+	gotoxy (X + ROW/2  - len/2 , Y + COLUMN/2 -1);
+	printf("%c", 201);
+	for (int i = 0; i < len; i++) printf("%c", 205);
+	printf ("%c", 187);
 
-                move (&ghost, table, rand()%4 + 1);
+	gotoxy (X + ROW/2 - len/2 , Y + COLUMN/2);
+    printf ("%c%s%c", 186, s, 186);
 
-                if (boost) SetConsoleTextAttribute (hConsole, WEAK_GHOST_COLOR);
-                else SetConsoleTextAttribute(hConsole, GHOST_COLOR);
-
-                gotoxy (ghost.x + X, ghost.y + Y);
-                printf ("G");
-                table [ghost.y][ghost.x] = -2;
-        }
-
-    for (int i = 0; i < COLUMN; i++)
-        for (int j = 0; j < ROW; j++)
-            if (table[i][j] == -2)
-                table[i][j] = 2;
+    gotoxy (X + ROW/2 - len/2 , Y + COLUMN/2 +1);
+    printf("%c", 200);
+    for (int i = 0; i < len; i++) printf("%c", 205);
+	printf ("%c", 188);
 }
