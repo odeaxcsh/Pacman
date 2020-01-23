@@ -30,21 +30,18 @@ typedef struct{
 	short y;
 } coord;
 
-void GameStart(){
-	
-}
-void massageBox();
-void Frame(int, int);
-char flimentPrint (short [MCOLUMN][MROW], int, int, int);
-void printWay (short [MCOLUMN][MROW], short [MCOLUMN][MROW], coord);
-void eraser ();
+void eraser();
 void hideCursor();
-int scanTable (coord*, short [MCOLUMN][MROW], char const*);
-void move (coord*, short [MCOLUMN][MROW], int);
+void messageBox();
+void Frame(int, int);
+void gotoxy(int, int);
+void move(coord*, short [MCOLUMN][MROW], int);
 void printTable (short [MCOLUMN][MROW], int, int);
-void gotoxy (int, int);
-int getChoose (coord, short[MCOLUMN][MROW], short [MCOLUMN][MROW]);
-coord navigator (coord, short[MCOLUMN][MROW], short[MCOLUMN][MROW]);
+char flimentPrint(short [MCOLUMN][MROW], int, int, int);
+int scanTable(coord*, short [MCOLUMN][MROW], char const*);
+int getChoose(coord, short[MCOLUMN][MROW], short [MCOLUMN][MROW]);
+void printWay(short [MCOLUMN][MROW], short [MCOLUMN][MROW], coord);
+coord navigator(coord, short[MCOLUMN][MROW], short[MCOLUMN][MROW]);
 
 int main () {
 	int err;
@@ -63,15 +60,18 @@ int main () {
 
 		err = scanTable (&pacman, table, fileAddress);
 	}while(!err);
-	
+
 	hideCursor();
-	for (int i = 0; i < 3; i++) Frame(1, 1);
-	printTable (table, PRINT_SLEEP_TIME, 1);
-    Sleep (1000);
-    printTable(table, 0, 0);
-    Sleep(1000);
-    massageBox("START");
-    Sleep(1000);
+	if (ROW > 6 && COLUMN > 6){
+        for (int i = 0; i < 3; i++) Frame(1, 1);
+        printTable (table, PRINT_SLEEP_TIME, 1);
+        Sleep (1000);
+        printTable(table, 0, 0);
+        Sleep(1000);
+        messageBox("START");
+        Sleep(1000);
+	}
+	else printf("Map is too small to show message boxes \n");
     printTable(table, 0, 0);
 	while (1) {
 		int choice;
@@ -95,12 +95,8 @@ int main () {
 	Sleep (1000);
 	eraser ();
 	for (int i = 0; i < 4; i++) Frame(0, 0);
-    
-	SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
-	gotoxy (X, 0);
-	printf ("THE END");
-	gotoxy (X, 1);
-	printf ("\\[%c-%c]/", 167, 167);
+	ROW = 0; COLUMN = 6;
+	messageBox("FINISH \\[^-^]/ THANKS");
 }
 void Frame (int m, int mode) {
 	gotoxy (X, Y);
@@ -204,11 +200,11 @@ void printTable (short table[MCOLUMN][MROW], int sleep, int mod) {
                 block = 'C';
                 SetConsoleTextAttribute(hConsole, PACMAN_COLOR);
             }
-			
+
             gotoxy (j + X, i + Y);
             printf ("%c", block);
                 if(mod)
-        	massageBox("PRINTING");
+        	messageBox("PRINTING");
         }
 }
 coord navigator (coord pacman, short table[MCOLUMN][MROW], short way[MCOLUMN][MROW]) {
@@ -311,15 +307,10 @@ void gotoxy(int x,int y){
 int getChoose (coord pacman, short table [MCOLUMN][MROW], short way[MCOLUMN][MROW]) {
 	static coord goal = {-1 , -1};
 
-	if ((goal.x == pacman.x && goal.y == pacman.y) || goal.x == -1) {
-		if (goal.x != -1){
-			massageBox("[^+^]");
-			Sleep(300);
-			printTable(table, 0, 0);
-		}
-		Sleep (CHOOSE_SLEEP_TIME);
-		goal = navigator (pacman, table, way);
-		printWay (way, table, pacman);
+	if ((goal.x == pacman.x && goal.y == pacman.y) || goal.x == -1){
+		Sleep(CHOOSE_SLEEP_TIME);
+		goal = navigator(pacman, table, way);
+		printWay(way, table, pacman);
 	}
 
 	way [pacman.y][pacman.x] = 0;
@@ -328,23 +319,21 @@ int getChoose (coord pacman, short table [MCOLUMN][MROW], short way[MCOLUMN][MRO
 }
 int scanTable (coord* pacman, short table[MCOLUMN][MROW], char const* fileAddress){
 	FILE* source = fopen (fileAddress, "r");
+	int i = 0, j = 0;
 
-	int i = 0;
-	int j = 0;
-
-	if (source == NULL) {
+	if (source == NULL){
 		SetConsoleTextAttribute(hConsole, 76);
-		printf ("FIle Not Exist (Oskol) [#_#] \n");
-		SetConsoleTextAttribute(hConsole, 15);
+		printf ("File Does NOT exist (Oskol) [#_#] Try again \n");
+		SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
 		return 0;
 	}
+
 	while (!feof (source)){
 		char bfr = getc (source);
-
 		if (bfr == '*') table [i][j++] = 1;
 		if (bfr == '#') table [i][j++] = 0;
 		if (bfr == '1') table [i][j++] = -1;
-		if (bfr == '0') {
+		if (bfr == '0'){
 			table [i][j++] = 2;
 			pacman->x = j-1;
 			pacman->y = i;
@@ -358,43 +347,42 @@ int scanTable (coord* pacman, short table[MCOLUMN][MROW], char const* fileAddres
 	COLUMN = i+1;
 	return 1;
 }
-void hideCursor(){
-   HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+void hideCursor(){//Hides cursor :)
    CONSOLE_CURSOR_INFO info;
    info.dwSize = 100;
    info.bVisible = FALSE;
-   SetConsoleCursorInfo(consoleHandle, &info);
+   SetConsoleCursorInfo(hConsole, &info);
 }
-void eraser (){
-	gotoxy (0, 0);
-	SetConsoleTextAttribute(hConsole, CORSUR_COLOR);
+void eraser(){
+	SetConsoleTextAttribute(hConsole, CORSUR_COLOR);//CHANGE COLOR
+
 	for (int i = 0; i < COLUMN; i++)
 		for (int j = i; j < ROW; j++){
-			if (j < ROW && i < COLUMN) {
+			if (j < ROW && i < COLUMN){//Print cursor (HORIZENTAL)
 				gotoxy (j + X, i + Y);
 				printf ("%c", 219);
 			}
-			if (j < COLUMN && i < ROW) {
+			if (j < COLUMN && i < ROW) {//Print cursor (VERTICAL)
 				gotoxy (i + X, j + Y);
 				printf ("%c", 219);
 			}
 
 			Sleep (PRINT_SLEEP_TIME);
-			
-			if (j < ROW && i < COLUMN){
+
+			if (j < ROW && i < COLUMN){//Erase map (HORIZENTAL)
 				gotoxy (j + X, i + Y);
 				printf (" ");
 			}
-			if (j < COLUMN && i < ROW) {
+			if (j < COLUMN && i < ROW) {//Erase map (VERTICAL)
 				gotoxy (i + X, j + Y);
 				printf (" ");
 			}
 		}
 }
-char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p) {
+char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p){
     char block = 0;
     int value = 8 * (j+1 < ROW ? table [i][j+1] == p : 0) + 4 * (j > 0 ? table [i][j-1] == p : 0) + 2 * (i > 0 ? table [i-1][j] == p : 0) + (i+1 < COLUMN ? table [i+1][j] == p : 0);
-				switch (value) {
+				switch (value) {//ADDING COMMENT TO THIS PARTS IS TOO COMPLEX
 					case 0 : block = 254; break;
 
 					case 1:
@@ -419,18 +407,18 @@ char flimentPrint (short table[MCOLUMN][MROW], int i, int j, int p) {
             }
     return block;
 }
-void massageBox (char* s){
+void messageBox (char* s){
 	int len = strlen (s);
     SetConsoleTextAttribute(hConsole, MASAAGE_BOX_COLOR);
+
 	gotoxy (X + ROW/2  - len/2 , Y + COLUMN/2 -1);
-	
 	printf("%c", 201);
 	for (int i = 0; i < len; i++) printf("%c", 205);
 	printf ("%c", 187);
-    
+
 	gotoxy (X + ROW/2 - len/2 , Y + COLUMN/2);
     printf ("%c%s%c", 186, s, 186);
-    
+
     gotoxy (X + ROW/2 - len/2 , Y + COLUMN/2 +1);
     printf("%c", 200);
     for (int i = 0; i < len; i++) printf("%c", 205);
