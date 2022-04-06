@@ -60,11 +60,13 @@ int main()
         linkedlist_clear(&path);
     }
 
+    Pause(FINISH_SLEEP_TIME);
     GotoXY(screenOrigin.x, screenOrigin.y);
     ShowCursorIcon();
     ClearTexture(table->layer);
-    PrintTexture(table->layer, NULL, 5);
+    PrintTexture(table->layer, NULL, ERASE_SLEEP_TIME);
 
+    Pause(FINISH_SLEEP_TIME);
     FreeTable(table);
     ClearLayer(text);
     ClearMap(costs);
